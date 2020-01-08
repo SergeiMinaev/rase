@@ -1,0 +1,9 @@
+[package]
+name = "Rase"
+version = "0.1.0"
+authors = ["Sergei Minaev <i@zenux.ru>"]
+edition = "2020"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

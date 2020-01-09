@@ -25,7 +25,6 @@ fn get_config_param(def_config_toml: &toml::Value, user_config_toml: &toml::Valu
 }
 
 pub fn get_config() -> Config {
-    let mut config_params = ["thread_count", "asd"];
     let mut file = File::open("rase.toml").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();

@@ -1,0 +1,2 @@
+# Example config file. Rename it to rase.toml
+thread_count = 100

@@ -1,14 +1,17 @@
-use rase::ThreadPool;
 use std::net::TcpListener;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::fs::File;
 use std::thread;
 use std::time::Duration;
+use rase::ThreadPool;
+use rase::config_parser;
+
 
 fn main() {
+    let conf = config_parser::get_config();
 	let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
-	let pool = ThreadPool::new(100);
+	let pool = ThreadPool::new(conf.thread_count);
 
 	for stream in listener.incoming() {
         //println!("stream incoming...");

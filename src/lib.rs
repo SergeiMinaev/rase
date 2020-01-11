@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 pub mod config_parser;
+pub mod logger;
 
 pub struct ThreadPool {
 	workers: Vec<Worker>,

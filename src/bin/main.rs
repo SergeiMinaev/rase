@@ -5,21 +5,25 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Duration;
 use std::net::TcpListener;
+use log::{LevelFilter};
 use chunked_transfer::Encoder;
 use path_clean::{PathClean};
 use rase::ThreadPool;
 use rase::config_parser;
+use rase::logger;
 
 
 fn main() {
+    log::set_logger(&logger::SIMPLE_LOGGER).unwrap();
+    log::set_max_level(LevelFilter::Info);
+
     let conf = config_parser::get_config();
+
 	let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 	let pool = ThreadPool::new(conf.thread_count);
 
 	for stream in listener.incoming() {
         let conf = conf.clone();
-
-
 		let stream = stream.unwrap();
 		pool.execute(move || {
 			handle_connection(stream, conf);

@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::convert::TryFrom;
+use log::{error};
 
 #[derive(Clone)]
 pub struct Config {
@@ -28,7 +29,11 @@ fn get_config_param_num(def_config_toml: &toml::Value,
     }
     let p = user_config_toml.get(param).unwrap_or(&def_config_toml[param]);
     match p.as_integer() {
-        None => panic!("Error in config file: param {} should be a number.", param),
+        None => {
+            error!("Error while parsing config file: \
+                    param {} should be a number.", param);
+            std::process::exit(0);
+        },
         Some(r) => {
             match usize::try_from(r) {
                 Err(err) => panic!(err),

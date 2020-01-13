@@ -2,7 +2,7 @@ use std::path::Path;
 use path_clean::{PathClean};
 use crate::config_parser::Config;
 
-pub static RESPONSE_401: &'static [u8] = b"HTTP/1.1 401 Not Found\r\n\
+pub static RESPONSE_404: &'static [u8] = b"HTTP/1.1 404 Not Found\r\n\
         Content-Length: 22\r\n\
         Content-Type: text/html\r\n\r\n\
         <h1>404 Not found</h1>";

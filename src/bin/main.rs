@@ -11,6 +11,7 @@ use path_clean::{PathClean};
 use rase::ThreadPool;
 use rase::config_parser;
 use rase::logger;
+use rase::mime;
 
 
 fn main() {
@@ -32,7 +33,6 @@ fn main() {
 }
 
 fn handle_connection(mut stream: TcpStream, conf: config_parser::Config) {
-
 	let mut buffer = [0; 512];
 	stream.read(&mut buffer).unwrap();
     let request_str = String::from_utf8_lossy(&buffer);
@@ -92,16 +92,20 @@ fn handle_static(mut stream: TcpStream, fname: &str, conf: &config_parser::Confi
         encoder.write_all(&buf).unwrap();
     }
     let f_len = f.metadata().unwrap().len();
-    let content_len = format!("Content-Length: {}", f_len);
+    let content_len = format!("Content-Length: {}\r\n", f_len);
+
+    let mime_line = match mime::get_mimetype(fname) {
+        None => String::from(""),
+        Some(m) => format!("Content-Type: {}\r\n", m),
+    };
     let headers = [
-        "HTTP/1.1 200 OK",
-        "Transfer-Encoding: chunked",
+        "HTTP/1.1 200 OK\r\n",
+        "Transfer-Encoding: chunked\r\n",
         content_len.as_str(),
+        mime_line.as_str(),
         "\r\n"
     ];
-    let mut response = headers.join("\r\n")
-        .to_string()
-        .into_bytes();
+    let mut response = headers.join("").to_string().into_bytes();
     response.extend(encoded);
 
     match stream.write(&response) {

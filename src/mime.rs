@@ -15,6 +15,7 @@ pub fn get_mimetype (fname: &str) -> Option<&str> {
     let m = match r.unwrap().to_str().unwrap().to_ascii_lowercase().as_str() {
         // application
         "7z" => "application/x-7z-compressed",
+        "bin" => "application/octet-stream",
         "bz" => "application/x-bzip",
         "bz2" => "application/x-bzip2",
         "doc" => "application/msword",
@@ -77,8 +78,6 @@ pub fn get_mimetype (fname: &str) -> Option<&str> {
         "ogv" => "video/ogg",
         "vp8" => "video/VP8",
         "webm" => "video/webm",
-        // other
-        "bin" => "application/octet-stream",
         _ => return None,
     };
     return Some(m);

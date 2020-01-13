@@ -72,7 +72,7 @@ fn handle_static(mut stream: TcpStream, request: &http::Request) {
         Ok(f) => f,
         Err(err) => {
             println!("Unable to open static file: {}", err);
-            &stream.write(http::RESPONSE_401);
+            &stream.write(http::RESPONSE_404);
             &stream.flush().unwrap();
             return;
         }

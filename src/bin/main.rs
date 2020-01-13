@@ -50,8 +50,12 @@ fn handle_connection(mut stream: TcpStream, conf: config_parser::Config) {
             thread::sleep(Duration::from_millis(500));
             ("200 OK", "goodbye.html")
         } else {
-            ("401 NOT FOUND", "goodbye.html")
+            ("404", "")
         };
+        if status_code == "404" {
+            http::return_404(&stream);
+            return;
+        }
 
         let mut file = File::open(filename).unwrap();
         let mut contents = String::new();
@@ -72,8 +76,7 @@ fn handle_static(mut stream: TcpStream, request: &http::Request) {
         Ok(f) => f,
         Err(err) => {
             println!("Unable to open static file: {}", err);
-            &stream.write(http::RESPONSE_404);
-            &stream.flush().unwrap();
+            http::return_404(&stream);
             return;
         }
     };

@@ -1,4 +1,6 @@
 use std::path::Path;
+use std::io::Write;
+use std::net::TcpStream;
 use path_clean::{PathClean};
 use crate::config_parser::Config;
 
@@ -77,4 +79,7 @@ pub fn parse_request<'a>(request_str: &'a str,
     return request;
 }
 
-
+pub fn return_404(mut stream: &TcpStream) {
+    stream.write(RESPONSE_404).unwrap();
+    stream.flush().unwrap();
+}

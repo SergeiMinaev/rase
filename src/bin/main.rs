@@ -13,7 +13,7 @@ use rase::mime;
 use rase::http;
 
 
-fn main() {
+pub fn main() {
     log::set_logger(&logger::SIMPLE_LOGGER).unwrap();
     log::set_max_level(LevelFilter::Info);
 

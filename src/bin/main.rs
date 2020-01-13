@@ -36,7 +36,7 @@ fn handle_connection(mut stream: TcpStream, conf: config_parser::Config) {
 	stream.read(&mut buffer).unwrap();
     let request_str = String::from_utf8_lossy(&buffer);
     let request = http::parse_request(&request_str, &conf);
-    info!("{} {}", request.method, request.url_path);
+    info!("{} {} {}", request.host, request.method, request.url_path);
 
 	let get = b"GET / HTTP/1.1\r\n";
 	let sleep = b"GET /sleep HTTP/1.1\r\n";

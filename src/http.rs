@@ -10,7 +10,8 @@ pub static RESPONSE_404: &'static [u8] = b"HTTP/1.1 404 Not Found\r\n\
         <h1>404 Not found</h1>";
 
 pub struct Request {
-    pub version: String, 
+    pub version: String,
+    pub host: String,
     pub method: String,
     pub url_path: String,
     pub fs_path: String,
@@ -22,6 +23,7 @@ pub struct Request {
 fn get_default_request() -> Request {
     return Request {
         version: "".to_string(),
+        host: "".to_string(),
         method: "".to_string(),
         url_path: "".to_string(),
         fs_path: "".to_string(),
@@ -67,6 +69,13 @@ pub fn parse_request<'a>(request_str: &'a str,
                         request.is_deflate_allowed = true;
                     }
                 }
+            }
+        } else if line.starts_with("Host: ") {
+            let split: Vec<&str> = line.split(" ").collect();
+            let count = line.split(" ").count();
+            if count > 1 {
+                let host_split: Vec<&str> = split[1].split(":").collect();
+                request.host = host_split[0].to_string();
             }
         }
     }

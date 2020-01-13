@@ -65,7 +65,7 @@ pub fn get_config() ->  Config {
     let user_config_toml: toml::Value = contents.parse().unwrap();
     let def_config_toml = get_def_config_toml();
     
-    let config = Config {
+    let mut config = Config {
         thread_count: get_config_param_num(&def_config_toml,
                                     &user_config_toml, 
                                     &"thread_count".to_string(), false),
@@ -79,5 +79,8 @@ pub fn get_config() ->  Config {
                                     &user_config_toml,
                                     &"static_url".to_string(), true)),
     };
+    if !config.static_url.ends_with("/") {
+        config.static_url.push_str("/");
+    }
     return config;
 }

@@ -1,17 +1,16 @@
 use std::thread;
 use std::fs::File;
-use std::path::{Path};
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Duration;
 use std::net::TcpListener;
-use log::{LevelFilter};
+use log::{LevelFilter, info};
 use chunked_transfer::Encoder;
-use path_clean::{PathClean};
 use rase::ThreadPool;
 use rase::config_parser;
 use rase::logger;
 use rase::mime;
+use rase::http;
 
 
 fn main() {
@@ -36,19 +35,14 @@ fn handle_connection(mut stream: TcpStream, conf: config_parser::Config) {
 	let mut buffer = [0; 512];
 	stream.read(&mut buffer).unwrap();
     let request_str = String::from_utf8_lossy(&buffer);
+    let request = http::parse_request(&request_str, &conf);
+    info!("{} {}", request.method, request.url_path);
 
 	let get = b"GET / HTTP/1.1\r\n";
 	let sleep = b"GET /sleep HTTP/1.1\r\n";
-    let s_static = String::from("GET static_url").replace("static_url",
-                                    conf.static_url.as_str());
 
-    if buffer.starts_with(s_static.as_bytes()) {
-        let fname = &get_requested_path(&request_str);
-        if !is_path_safe(fname) {
-            println!("Path is not safe: {}", fname);
-            return;
-        }
-        handle_static(stream, &fname, &conf);
+    if request.is_static {
+        handle_static(stream, &request);
     } else {
         let (status_code, filename) = if buffer.starts_with(get) {
             ("200 OK", "goodbye.html")
@@ -72,17 +66,18 @@ fn handle_connection(mut stream: TcpStream, conf: config_parser::Config) {
     }
 }
 
-fn handle_static(mut stream: TcpStream, fname: &str, conf: &config_parser::Config) {
-    let mut fullpath = String::from(conf.static_dir.as_str());
-    fullpath.push_str(fname);
+fn handle_static(mut stream: TcpStream, request: &http::Request) {
     let mut buf = Vec::new();
-    let mut f = match File::open(fullpath.as_str()) {
+    let mut f = match File::open(&request.fs_path) {
         Ok(f) => f,
         Err(err) => {
             println!("Unable to open static file: {}", err);
+            &stream.write(http::RESPONSE_401);
+            &stream.flush().unwrap();
             return;
         }
     };
+
     
     f.read_to_end(&mut buf).unwrap();
 
@@ -94,7 +89,7 @@ fn handle_static(mut stream: TcpStream, fname: &str, conf: &config_parser::Confi
     let f_len = f.metadata().unwrap().len();
     let content_len = format!("Content-Length: {}\r\n", f_len);
 
-    let mime_line = match mime::get_mimetype(fname) {
+    let mime_line = match mime::get_mimetype(request.fs_path.as_str()) {
         None => String::from(""),
         Some(m) => format!("Content-Type: {}\r\n", m),
     };
@@ -112,18 +107,4 @@ fn handle_static(mut stream: TcpStream, fname: &str, conf: &config_parser::Confi
         Ok(_) => (),
         Err(e) => println!("Failed sending response: {}", e),
     }
-}
-
-fn get_requested_path(request: &str) -> &str {
-    let mut path: Vec<&str> = request.lines().next().unwrap().split("GET /static/")
-        .collect();
-    path = path[1].split(" ").collect();
-    return path[0];
-}
-
-fn is_path_safe(requested_path: &str) -> bool {
-    let conf = config_parser::get_config();
-    let static_path = Path::new(&conf.static_dir);
-    let full_path = static_path.join(requested_path).clean();
-    return full_path.starts_with(static_path);
 }

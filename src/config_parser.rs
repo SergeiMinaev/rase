@@ -72,13 +72,19 @@ pub fn get_config() ->  Config {
     let mut contents = String::new();
     match file.read_to_string(&mut contents) {
         Err(why) => {
-            error!("Could not read {}: {}", path.display(), why);
+            error!("Couldn't read {}: {}", path.display(), why);
             std::process::exit(0);
         },
         Ok(c) => c,
     };
 
-    let user_config_toml: toml::Value = contents.parse().unwrap();
+    let user_config_toml: toml::Value = match contents.parse() {
+        Err(why) => {
+            error!("Couldn't parse config file {}: {}", path.display(), why);
+            std::process::exit(0);
+        },
+        Ok(c) => c,
+    };
     let def_config_toml = get_def_config_toml();
     
     let mut config = Config {

@@ -60,22 +60,19 @@ fn get_config_param_str(def_config_toml: &toml::Value,
 
 pub fn get_config() ->  Config {
     let path = Path::new("rase.toml");
-    let display = path.display();
-
     let mut file = match File::open(&path) {
         Err(why) => {
             error!("Couldn't open config file {}: {}\n\
                 Config file is required. You can find an example config \
-                in Rase dir.", display, why);
+                in Rase dir.", path.display(), why);
             std::process::exit(0);
         },
         Ok(file) => file,
     };
-
     let mut contents = String::new();
     match file.read_to_string(&mut contents) {
         Err(why) => {
-            error!("Could not read {}: {}", display, why);
+            error!("Could not read {}: {}", path.display(), why);
             std::process::exit(0);
         },
         Ok(c) => c,

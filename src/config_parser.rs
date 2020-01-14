@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::path::Path;
 use std::io::prelude::*;
 use std::convert::TryFrom;
 use log::{error};
@@ -58,9 +59,27 @@ fn get_config_param_str(def_config_toml: &toml::Value,
 }
 
 pub fn get_config() ->  Config {
-    let mut file = File::open("rase.toml").unwrap();
+    let path = Path::new("rase.toml");
+    let display = path.display();
+
+    let mut file = match File::open(&path) {
+        Err(why) => {
+            error!("Couldn't open config file {}: {}\n\
+                Config file is required. You can find an example config \
+                in Rase dir.", display, why);
+            std::process::exit(0);
+        },
+        Ok(file) => file,
+    };
+
     let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
+    match file.read_to_string(&mut contents) {
+        Err(why) => {
+            error!("Could not read {}: {}", display, why);
+            std::process::exit(0);
+        },
+        Ok(c) => c,
+    };
 
     let user_config_toml: toml::Value = contents.parse().unwrap();
     let def_config_toml = get_def_config_toml();

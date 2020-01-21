@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::net::TcpListener;
 use std::string::String;
-use log::{LevelFilter, info};
+use log::{LevelFilter, info, error};
 use chunked_transfer::Encoder;
 use crate::ThreadPool;
 use crate::config_parser;
@@ -27,7 +27,13 @@ pub fn init_listener(app: fn(request: &http::Request) -> String) {
 
     let conf = config_parser::get_config();
 
-	let listener = TcpListener::bind(&conf.address_full).unwrap();
+	let listener = match TcpListener::bind(&conf.address_full) {
+        Err(why) => {
+            error!("{}", why);
+            return;
+        },
+        Ok(listener) => listener,
+    };
 	let pool = ThreadPool::new(conf.thread_count);
 
 	for stream in listener.incoming() {

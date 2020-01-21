@@ -1,5 +1,5 @@
-use  rase;
+use rase;
 
 fn main() {
-    rase::server::run();
+    rase::server::run_empty();
 }

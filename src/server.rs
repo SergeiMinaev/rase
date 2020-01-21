@@ -27,7 +27,7 @@ pub fn init_listener(app: fn(request: &http::Request) -> String) {
 
     let conf = config_parser::get_config();
 
-	let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+	let listener = TcpListener::bind(&conf.address_full).unwrap();
 	let pool = ThreadPool::new(conf.thread_count);
 
 	for stream in listener.incoming() {

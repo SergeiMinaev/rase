@@ -6,6 +6,9 @@ use log::{error};
 
 #[derive(Clone)]
 pub struct Config {
+    pub address: String,
+    pub port: String,
+    pub address_full: String,
     pub thread_count: usize,
     pub test_param: usize,
     pub static_dir: String,
@@ -14,6 +17,9 @@ pub struct Config {
 
 fn get_def_config_toml() -> toml::Value {
     return (r#"
+        address = '127.0.0.1'
+        port = '8000'
+        address_full = '127.0.0.1:8000'
         thread_count = 3
         test_param = 5
         static_dir = ''
@@ -87,7 +93,17 @@ pub fn get_config() ->  Config {
     };
     let def_config_toml = get_def_config_toml();
     
+    let address = String::from(&get_config_param_str(&def_config_toml,
+                                    &user_config_toml,
+                                    &"address".to_string(), false));
+    let port = String::from(get_config_param_str(&def_config_toml,
+                                    &user_config_toml, 
+                                    &"port".to_string(), false));
+    let address_full = [&address, ":", &port].join("").to_string();
     let mut config = Config {
+        address: address,
+        port: port,
+        address_full: address_full,
         thread_count: get_config_param_num(&def_config_toml,
                                     &user_config_toml, 
                                     &"thread_count".to_string(), false),

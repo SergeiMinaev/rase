@@ -1,4 +1,6 @@
 # Example config file. Rename it to rase.toml
+address = "127.0.0.1"
+port = "8000"
 thread_count = 100
 static_dir = "/srv/rase/static/"
 static_url = "/static/"

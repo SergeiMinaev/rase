@@ -20,6 +20,11 @@ pub struct Request {
     pub is_static: bool,
 }
 
+pub struct HttpResponse {
+    pub code: u16,
+    pub content: String,
+}
+
 fn get_default_request() -> Request {
     return Request {
         version: "".to_string(),

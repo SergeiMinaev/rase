@@ -5,6 +5,7 @@ use std::net::TcpListener;
 use std::string::String;
 use log::{LevelFilter, info, error};
 use chunked_transfer::Encoder;
+use libflate::gzip;
 use crate::ThreadPool;
 use crate::config_parser;
 use crate::logger;
@@ -17,11 +18,11 @@ pub fn run_empty() {
     init_listener(default_app);
 }
 
-pub fn run(app: fn(request: &http::Request) -> String) {
+pub fn run(app: fn(request: &http::Request) -> http::HttpResponse) {
     init_listener(app);
 }
 
-pub fn init_listener(app: fn(request: &http::Request) -> String) {
+pub fn init_listener(app: fn(request: &http::Request) -> http::HttpResponse) {
     log::set_logger(&logger::SIMPLE_LOGGER).unwrap();
     log::set_max_level(LevelFilter::Info);
 
@@ -46,7 +47,7 @@ pub fn init_listener(app: fn(request: &http::Request) -> String) {
 }
 
 fn handle_connection(mut stream: TcpStream, conf: config_parser::Config,
-                     app: fn(request: &http::Request) -> String) {
+                     app: fn(request: &http::Request) -> http::HttpResponse) {
 	let mut buffer = [0; 512];
 	stream.read(&mut buffer).unwrap();
     let request_str = String::from_utf8_lossy(&buffer);
@@ -57,12 +58,43 @@ fn handle_connection(mut stream: TcpStream, conf: config_parser::Config,
         handle_static(stream, &request);
     } else {
         let response = app(&request);
-        match stream.write(&response.into_bytes()) {
+        let response_raw = http_response_to_str(&request, &response);
+
+        match stream.write(&response_raw) {
             Ok(_) => (),
-            Err(e) => println!("Failed to send response: {}", e),
+            Err(e) => println!("Failed to send a response: {}", e),
         };
-        stream.flush().unwrap();
+        match stream.flush() {
+            Ok(_) => (),
+            Err(e) => error!("{}", e),
+        };
     }
+}
+
+fn http_response_to_str(request: &http::Request, r: &http::HttpResponse
+                        ) ->  std::vec::Vec<u8> {
+    let content: std::vec::Vec<u8>;
+    if request.is_gzip_allowed {
+        let mut encoder = gzip::Encoder::new(Vec::new()).unwrap();
+        match encoder.write_all(&r.content.to_string().into_bytes()) {
+            Ok(_) => (),
+            Err(e) => error!("{}", e),
+        };
+        content = match encoder.finish().into_result() {
+            Ok(d) => d,
+            Err(_) => Vec::new(),
+        };
+    } else {
+        content = r.content.as_bytes().to_vec();
+    }
+    let content_len = format!("Content-Length: {}\r\n", content.len());
+    let mut resp = String::from(format!("HTTP/1.1 {} OK\r\nContent-Type: text/html\r\n", r.code));
+    resp.push_str(content_len.as_str());
+    if request.is_gzip_allowed {
+        resp.push_str(&"Content-Encoding: gzip\r\n".to_string());
+    }
+    resp.push_str("\r\n");
+    return [resp.into_bytes(), content].concat();
 }
 
 fn handle_static(mut stream: TcpStream, request: &http::Request) {

@@ -54,7 +54,7 @@ fn handle_connection(mut stream: TcpStream, conf: config_parser::Config,
     info!("{} {} {}", request.host, request.method, request.url_path);
 
     if request.is_static {
-        handle_static(stream, &request);
+        handle_static(stream, &request, &conf);
     } else {
         let response = app(&request);
         let response_raw = http_response_to_str(&request, &response);
@@ -96,7 +96,8 @@ fn http_response_to_str(request: &http::Request, r: &http::HttpResponse
     return [resp.into_bytes(), content].concat();
 }
 
-fn handle_static(mut stream: TcpStream, request: &http::Request) {
+fn handle_static(mut stream: TcpStream, request: &http::Request,
+                conf: &config_parser::Config) {
     let mut _tmp = [0; 512];
     stream.read(&mut _tmp).unwrap();
 
@@ -111,7 +112,11 @@ fn handle_static(mut stream: TcpStream, request: &http::Request) {
         }
     };
     f.read_to_end(&mut buf).unwrap();
-    if request.is_gzip_allowed {
+    let file_size = buf.len();
+    let is_gzip_needed = request.is_gzip_allowed &&
+                          file_size >= conf.gzip_min_size &&
+                          file_size <= conf.gzip_max_size;
+    if is_gzip_needed {
         let mut encoder = gzip::Encoder::new(Vec::new()).unwrap();
         match encoder.write_all(&buf) {
             Ok(_) => (),
@@ -129,7 +134,7 @@ fn handle_static(mut stream: TcpStream, request: &http::Request) {
         None => String::from(""),
         Some(m) => format!("Content-Type: {}\r\n", m),
     };
-    let content_encoding = match request.is_gzip_allowed {
+    let content_encoding = match is_gzip_needed {
         true => "Content-Encoding: gzip\r\n",
         false => "",
     };

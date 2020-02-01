@@ -13,6 +13,8 @@ pub struct Config {
     pub test_param: usize,
     pub static_dir: String,
     pub static_url: String,
+    pub gzip_min_size: usize,
+    pub gzip_max_size: usize,
 }
 
 fn get_def_config_toml() -> toml::Value {
@@ -24,6 +26,8 @@ fn get_def_config_toml() -> toml::Value {
         test_param = 5
         static_dir = ''
         static_url = '/static/'
+        gzip_min_size = 1024
+        gzip_max_size = 1048576
     "#).parse().unwrap();
 }
 
@@ -116,6 +120,12 @@ pub fn get_config() ->  Config {
         static_url: String::from(&get_config_param_str(&def_config_toml,
                                     &user_config_toml,
                                     &"static_url".to_string(), true)),
+        gzip_min_size: get_config_param_num(&def_config_toml,
+                                    &user_config_toml, 
+                                    &"gzip_min_size".to_string(), false),
+        gzip_max_size: get_config_param_num(&def_config_toml,
+                                    &user_config_toml, 
+                                    &"gzip_max_size".to_string(), false),
     };
     if !config.static_url.ends_with("/") {
         config.static_url.push_str("/");

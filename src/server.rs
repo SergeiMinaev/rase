@@ -151,7 +151,7 @@ fn handle_static(mut stream: TcpStream, request: &http::Request,
 
     match stream.write_all(&response) {
         Ok(_) => (),
-        Err(e) => println!("Failed sending response: {}", e),
+        Err(e) => error!("{}", e),
     }
     match stream.flush() {
         Ok(_) => (),

@@ -101,6 +101,7 @@ fn handle_static(mut stream: TcpStream, request: &http::Request) {
     stream.read(&mut _tmp).unwrap();
 
     let mut buf = Vec::new();
+    let content: std::vec::Vec<u8>;
     let mut f = match File::open(&request.fs_path) {
         Ok(f) => f,
         Err(err) => {
@@ -109,24 +110,39 @@ fn handle_static(mut stream: TcpStream, request: &http::Request) {
             return;
         }
     };
-
-    
     f.read_to_end(&mut buf).unwrap();
-
-    let content_len = format!("Content-Length: {}\r\n", buf.len());
-
+    if request.is_gzip_allowed {
+        let mut encoder = gzip::Encoder::new(Vec::new()).unwrap();
+        match encoder.write_all(&buf) {
+            Ok(_) => (),
+            Err(e) => error!("{}", e),
+        };
+        content = match encoder.finish().into_result() {
+            Ok(d) => d,
+            Err(_) => Vec::new(),
+        };
+    } else {
+        content = buf;
+    }
+    let content_len = format!("Content-Length: {}\r\n", content.len());
     let mime_line = match mime::get_mimetype(request.fs_path.as_str()) {
         None => String::from(""),
         Some(m) => format!("Content-Type: {}\r\n", m),
+    };
+    let content_encoding = match request.is_gzip_allowed {
+        true => "Content-Encoding: gzip\r\n",
+        false => "",
     };
     let headers = [
         "HTTP/1.1 200 OK\r\n",
         content_len.as_str(),
         mime_line.as_str(),
+        content_encoding,
         "\r\n"
     ];
     let mut response = headers.join("").to_string().into_bytes();
-    response.extend(buf);
+
+    response.extend(content);
 
     match stream.write_all(&response) {
         Ok(_) => (),

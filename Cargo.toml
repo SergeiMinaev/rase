@@ -10,7 +10,6 @@ path = "src/bin/main.rs"
 
 [dependencies]
 toml = "0.5.5"
-chunked_transfer = "1.0.0"
 path-clean = "0.1.0"
 log = "0.4.8"
 libflate = "0.1.27"

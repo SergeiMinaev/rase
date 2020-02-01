@@ -4,7 +4,6 @@ use std::net::TcpStream;
 use std::net::TcpListener;
 use std::string::String;
 use log::{LevelFilter, info, error};
-use chunked_transfer::Encoder;
 use libflate::gzip;
 use crate::ThreadPool;
 use crate::config_parser;
@@ -98,6 +97,9 @@ fn http_response_to_str(request: &http::Request, r: &http::HttpResponse
 }
 
 fn handle_static(mut stream: TcpStream, request: &http::Request) {
+    let mut _tmp = [0; 512];
+    stream.read(&mut _tmp).unwrap();
+
     let mut buf = Vec::new();
     let mut f = match File::open(&request.fs_path) {
         Ok(f) => f,
@@ -111,13 +113,7 @@ fn handle_static(mut stream: TcpStream, request: &http::Request) {
     
     f.read_to_end(&mut buf).unwrap();
 
-    let mut encoded = Vec::new();
-    {
-        let mut encoder = Encoder::with_chunks_size(&mut encoded, 1024*1024);
-        encoder.write_all(&buf).unwrap();
-    }
-    let f_len = f.metadata().unwrap().len();
-    let content_len = format!("Content-Length: {}\r\n", f_len);
+    let content_len = format!("Content-Length: {}\r\n", buf.len());
 
     let mime_line = match mime::get_mimetype(request.fs_path.as_str()) {
         None => String::from(""),
@@ -125,16 +121,19 @@ fn handle_static(mut stream: TcpStream, request: &http::Request) {
     };
     let headers = [
         "HTTP/1.1 200 OK\r\n",
-        "Transfer-Encoding: chunked\r\n",
         content_len.as_str(),
         mime_line.as_str(),
         "\r\n"
     ];
     let mut response = headers.join("").to_string().into_bytes();
-    response.extend(encoded);
+    response.extend(buf);
 
-    match stream.write(&response) {
+    match stream.write_all(&response) {
         Ok(_) => (),
         Err(e) => println!("Failed sending response: {}", e),
     }
+    match stream.flush() {
+        Ok(_) => (),
+        Err(e) => error!("{}", e),
+    };
 }

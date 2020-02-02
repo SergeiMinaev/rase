@@ -6,3 +6,6 @@ static_dir = "/srv/rase/static/"
 static_url = "/static/"
 gzip_min_size = 1024
 gzip_max_size = 1048576
+gzip_file_types = [
+  "js", "txt", "html", "css" 
+]

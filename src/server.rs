@@ -3,6 +3,7 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::net::TcpListener;
 use std::string::String;
+use std::path::Path;
 use log::{LevelFilter, info, error};
 use libflate::gzip;
 use crate::ThreadPool;
@@ -113,9 +114,15 @@ fn handle_static(mut stream: TcpStream, request: &http::Request,
     };
     f.read_to_end(&mut buf).unwrap();
     let file_size = buf.len();
+    let fs_path = Path::new(&request.fs_path);
+    let file_ext = match fs_path.extension() {
+        None => String::from(""),
+        Some(v) => v.to_str().unwrap().to_owned(),
+    };
     let is_gzip_needed = request.is_gzip_allowed &&
                           file_size >= conf.gzip_min_size &&
-                          file_size <= conf.gzip_max_size;
+                          file_size <= conf.gzip_max_size &&
+                          conf.gzip_file_types.contains(&file_ext);
     if is_gzip_needed {
         let mut encoder = gzip::Encoder::new(Vec::new()).unwrap();
         match encoder.write_all(&buf) {

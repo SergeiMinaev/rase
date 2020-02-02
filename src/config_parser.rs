@@ -15,6 +15,7 @@ pub struct Config {
     pub static_url: String,
     pub gzip_min_size: usize,
     pub gzip_max_size: usize,
+    pub gzip_file_types: std::vec::Vec<String>,
 }
 
 fn get_def_config_toml() -> toml::Value {
@@ -28,6 +29,7 @@ fn get_def_config_toml() -> toml::Value {
         static_url = '/static/'
         gzip_min_size = 1024
         gzip_max_size = 1048576
+        gzip_file_types = ["js", "txt", "html", "css"]
     "#).parse().unwrap();
 }
 
@@ -66,6 +68,44 @@ fn get_config_param_str(def_config_toml: &toml::Value,
         None => panic!("Error in config file: param {} should be a string.", param),
         Some(r) => return String::from(r),
     };
+}
+
+fn get_config_param_arr(def_config_toml: &toml::Value,
+                        user_config_toml: &toml::Value,
+                        param: &String,
+                        is_required: bool) -> std::vec::Vec<String> {
+    if is_required && !user_config_toml.get(param).is_some() {
+        error!("Error parsing config file: param {} is required.", param);
+        std::process::exit(0);
+    }
+    let p = user_config_toml.get(param).unwrap_or(&def_config_toml[param]);
+    //return p.as_array().unwrap();
+    let arr = match p.as_array() {
+        None => panic!("Error in config file: param {} should be a blabla.", param),
+        Some(p) => p,
+    };
+    let mut parsed_arr: std::vec::Vec<String> = Vec::new();
+    for item in arr {
+        if item.is_str() {
+            match item.as_str() {
+                None => error!("CANNOT BE EMPTY BLABLA"),
+                Some(v) => {
+                    if v == "" {
+                        error!("Error in config file: param {} should not contain \
+                        an empty string.", param);
+                        std::process::exit(0);
+                    } else {
+                        parsed_arr.push(v.to_owned());
+                    }
+                }
+            }
+        } else {
+            error!("Error in config file: param {} should be an array of strings.",
+                   param);
+            std::process::exit(0);
+        }
+    }
+    return parsed_arr;
 }
 
 pub fn get_config() ->  Config {
@@ -126,6 +166,9 @@ pub fn get_config() ->  Config {
         gzip_max_size: get_config_param_num(&def_config_toml,
                                     &user_config_toml, 
                                     &"gzip_max_size".to_string(), false),
+        gzip_file_types: get_config_param_arr(&def_config_toml,
+                                    &user_config_toml,
+                                    &"gzip_file_types".to_string(), false),
     };
     if !config.static_url.ends_with("/") {
         config.static_url.push_str("/");
